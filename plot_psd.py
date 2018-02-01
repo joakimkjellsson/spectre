@@ -6,13 +6,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
+from settings import setup_analysis
 from plot_functions_2 import *
+from read_saved_data import *
 
-starttime = datetime(2009,1,5)
-endtime   = datetime(2009,12,31)
-step      = timedelta(days=5)
-ddir      = '/Users/jkjellsson/Downloads/'
-data_list = read_stored_data(['INALT10.L46-KJH0017-NEST1'],['agulhas-retro'],'test',\
+setup = setup_analysis()
+
+starttime = setup['starttime']
+endtime   = setup['endtime']
+step      = setup['outputStep']
+ddir      = setup['outdir']
+data_list = read_stored_data(setup['names'],setup['regions'],setup['prefix'],\
                              starttime,endtime,step,\
                              ddir)
 

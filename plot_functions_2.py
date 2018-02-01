@@ -304,6 +304,7 @@ def plot_stored_data(data_list,format='png'):
          print psd.shape
          ax1.loglog(vk,psd,label=data_list[jd][jr]['run'])
       
+      ax1.legend(loc=3)
       fig.savefig('psd_KE.'+format,format=format)
       
       
@@ -320,6 +321,7 @@ def plot_stored_data(data_list,format='png'):
          pi = data_list[jd][jr]['Pi_ke'].mean(axis=0)
          ax1.semilogx(vk,pi,label=data_list[jd][jr]['run'])
       
+      ax1.legend(loc=4)
       fig.savefig('pi_KE.'+format,format=format)
       
       
@@ -338,6 +340,7 @@ def plot_stored_data(data_list,format='png'):
             tau = data_list[jd][jr]['Pi_ke_tau'].mean(axis=0)
             ax1.semilogx(vk,tau,label=data_list[jd][jr]['run'])
       
+      ax1.legend(loc=4)
       fig.savefig('pi_tau_ke.'+format,format=format)
       
       
@@ -356,6 +359,7 @@ def plot_stored_data(data_list,format='png'):
             visc = data_list[jd][jr]['Pi_ke_visc'].mean(axis=0)
             ax1.semilogx(vk,visc,label=data_list[jd][jr]['run'])
       
+      ax1.legend(loc=4)
       fig.savefig('pi_visc_ke.'+format,format=format)
       
 

@@ -4,7 +4,7 @@ import os,sys,time
 from scipy.fftpack import fft, ifft, fftn, ifftn
 from scipy.signal import periodogram, hamming, tukey
 import scipy.stats as stats
-from scipy.interpolate import griddata
+
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 
@@ -71,22 +71,6 @@ def calculate_rhines_scale(urms,mean_lat):
    b = 2. * 7.2921150 * 1e-5 * np.cos( np.pi/180. * mean_lat ) / (6371.0*1000)
    r = 2 * np.pi * np.sqrt( urms / b )
    return r
-   
-   
-def interp(lst):
-   [lon_hi,lat_hi,data_hi,lon_lo,lat_lo] = lst
-   
-   ## If we use compress the interpolation will fill in masked values, which we do not want.                                                                              
-   ## We only flatten, so that interpolation ignores masked values                                                                                                        
-   ## Make 1D arrays of lon, lat
-   points_hi = np.ma.array([lon_hi.flatten(),lat_hi.flatten()]).transpose()
-   data_hi   = data_hi[:,:].flatten()
-   
-   t0 = time.time()
-   data_lo = griddata(points_hi, data_hi, (lon_lo, lat_lo), method='nearest')
-   t1 = time.time()
-   
-   return data_lo
    
 
 def set_region(region,tlon,tlat):
@@ -157,6 +141,17 @@ def set_region(region,tlon,tlat):
       lon1 = 68
       lat0 = -45.5
       lat1 = -37
+   elif (region == 'agulhas-rings-big'):
+      lon0 = -10
+      lon1 = 60
+      lat0 = -50
+      lat1 = 10
+      rot = -20
+   elif (region == 'agulhas-current-big'):
+      lon0 = -5
+      lon1 = 67
+      lat0 = -50
+      lat1 = -10
    elif (region == 'agulhas-retro-2'):
       lon0 = 14
       lon1 = 68

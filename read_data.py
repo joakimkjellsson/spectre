@@ -2,6 +2,7 @@ import os,sys,time
 import numpy as np
 from datetime import datetime 
 from netCDF4 import Dataset
+from scipy.interpolate import griddata
 
 def read_data(date,run,ddir,mode='data',i0=0,i1=-1,j0=0,j1=-1,levels=np.array([]),readT=False,readW=False,ltend=False):
    """
@@ -621,7 +622,7 @@ def read_aviso(ufile,hfile,i0=0,i1=-1,j0=0,j1=-1):
    return data
 
 
-def interpolate_alldata(data_list,x2D,y2D,x1D,y1D):
+def interpolate_alldata(data_list,xor,yor,xnew,ynew):
    """
    Given a list of variables
    loop through all variables and interpolate to a regular grid
@@ -629,8 +630,8 @@ def interpolate_alldata(data_list,x2D,y2D,x1D,y1D):
    
    Input:
       data_list - List where each element is an array
-      x2D, y2D  - 2D arrays with x and y points 
-      x1D, y1D  - 1D arrays for regular grid
+      xor, yor  - 2D arrays with orignial x and y points 
+      xnew,ynew - 2D arrays for new grid
    
    Output:
       data_out  - List where each element is an array
@@ -677,7 +678,7 @@ def interpolate_alldata(data_list,x2D,y2D,x1D,y1D):
       t0 = time.time()
       for jn in range(0,nt):
          for jk in range(0,nz):
-            lst = [x2D, y2D, data_irr[jn,jk,:,:], xx2, yy2]
+            lst = [xor, yor, data_irr[jn,jk,:,:], xnew, ynew]
             data_reg[jn,jk,:,:] = interp(lst)
       t1 = time.time()
       
@@ -695,5 +696,30 @@ def interpolate_alldata(data_list,x2D,y2D,x1D,y1D):
    return data_out
 
 
+def interp(lst):
+   [lon_hi,lat_hi,data_hi,lon_lo,lat_lo] = lst
+   
+   ## If we use compress the interpolation will fill in masked values, which we do not want.                                                                              
+   ## We only flatten, so that interpolation ignores masked values                                                                                                        
+   ## Make 1D arrays of lon, lat
+   points_hi = np.ma.array([lon_hi.flatten(),lat_hi.flatten()]).transpose()
+   data_hi   = data_hi[:,:].flatten()
+   
+   t0 = time.time()
+   data_lo = griddata(points_hi, data_hi, (lon_lo, lat_lo), method='nearest')
+   t1 = time.time()
+   
+   return data_lo
 
+
+def rotate_grid(X,Y,rot):
+   """
+   """
+   
+   Xr   =  np.cos(rot)*X + np.sin(rot)*Y  # "cloclwise"
+   Yr   = -np.sin(rot)*X + np.cos(rot)*Y
+   
+   return Xr,Yr
+   
+   
    

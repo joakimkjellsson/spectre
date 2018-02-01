@@ -46,6 +46,7 @@ from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset, num2date, date2num
 
 ## load my own python functions
+from settings import setup_analysis
 from mod_eos import *
 from read_data import * 
 from read_saved_data import *
@@ -264,42 +265,38 @@ def make_file(outfile,currentTime,nk,fprec='f4',iprec='i4',cal='noleap'):
 ## Settings for the analysis
 ##
 
-full_prefix = 'test'  ## unique name for the analysis
-grid_type = 'll' ## type of grid (ll - lonlat)
-machine   = 'mac'  ## where are you doing the calculations
-starttime = datetime(2009,1,5)
-endtime   = datetime(2009,12,31)
-outputStep = timedelta(days=5)
+setup = setup_analysis()
 
-lcalculate = False  # do calculations and save to files
+full_prefix = setup['prefix']  ## unique name for the analysis
+grid_type = setup['grid_type'] ## type of grid (ll - lonlat)
+starttime = setup['starttime']
+endtime   = setup['endtime']
+outputStep = setup['outputStep']
 
-ltukey  = False  ## use a Tukey window to force zero on boundaries
-lrhines = False  ## calculate and plot Rhines scale
-lrossby = True    ## read and plot 1st baroclinic Rossby radius
-lpsd_freq = False  ## store each step to make frequency spectrum analysis
-lbtbc   = False    ## barotropic and baroclinic components
-leddy   = False    ## remove mean to get eddy components
-lpe     = False  ## calculate potential energy
-ltend   = False   ## read full model tendencies
-lreadw  = True   ## read vertical velocity (otherwise infer from cont.)
-lssh    = False ## calculate ssh and surface pressur gradient
-lrho    = False ## calculate buoyancy and hydrostatic pressure gradient
-ltau    = True  ## calculate wind stress
-lbfr    = True  ## calculate bottom friction
-lvsc    = True  ## calculate horizontal viscosity
-lvertical = False ## calculate vertical KE flux and viscosity (experimental!)
-lape    = False ## APE calculations that dont work!
+lcalculate = setup['lcalculate']  # do calculations and save to files
+ltukey  = setup['ltukey'] ## use a Tukey window to force zero on boundaries
+lrhines = setup['lrhines']  ## calculate and plot Rhines scale
+lrossby = setup['lrossby']    ## read and plot 1st baroclinic Rossby radius
+lpsd_freq = setup['lpsd_freq']  ## store each step to make frequency spectrum analysis
+lbtbc   = setup['lbtbc']    ## barotropic and baroclinic components
+leddy   = setup['leddy']    ## remove mean to get eddy components
+lpe     = setup['lpe']  ## calculate potential energy
+ltend   = setup['ltend']   ## read full model tendencies
+lreadw  = setup['lreadw']   ## read vertical velocity (otherwise infer from cont.)
+lssh    = setup['lssh'] ## calculate ssh and surface pressur gradient
+lrho    = setup['lrho'] ## calculate buoyancy and hydrostatic pressure gradient
+ltau    = setup['ltau']  ## calculate wind stress
+lbfr    = setup['lbfr']  ## calculate bottom friction
+lvsc    = setup['lvsc']  ## calculate horizontal viscosity
+lvertical = setup['lvertical'] ## calculate vertical KE flux and viscosity (experimental!)
+lape    = setup['lape'] ## APE calculations that dont work!
+ltrend    = setup['ltrend']
 
-lsmooth   = False  # smooth data in wavenumber space
-nsmooth = 5
-lrunningmean = False  # do a running mean in time
+linterpolate = setup['linterpolate'] ## interpolate NEMO data to regular grid. May not be necessary
+lrotate      = setup['lrotate']
 
-linterpolate = False ## interpolate NEMO data to regular grid. May not be necessary
+diag_level = setup['diag_level']
 
-diag_level = 1 ## = 0 no diagnostics plots
-               ## = 1 plot KE spectra and map of sfc vorticity each step
-
-ltrend    = False # calculate time trends (not working)
 pcrit = 0.1 ## p-limit for significant trend
 
 ## if we want potential energy, we need sea surface height and density (if 3D model)
@@ -307,57 +304,17 @@ if lpe:
    lssh=True
    lrho=True
 
-noff = 0
-
-if (machine == 'mac'):
-   pdir = '/Users/jkjellsson/Downloads/'
-   outdir = '/Users/jkjellsson/Downloads/'
-   
-elif (machine == 'archer'):
-   pdir = '/work/n01/n01/joakim2/frames/'
-   outdir = '/work/n01/n01/joakim2/data/psd/'
-   
-elif (machine == 'jasmin'):
-   pdir = './'
-   outdir = '/group_workspaces/jasmin2/aopp/joakim/psd/slask/'
-
-pdir = pdir + '/' + full_prefix + '/'
+pdir = setup['pdir'] + '/' + full_prefix + '/'
 os.system('mkdir -p '+pdir)
-
-## Vertical levels to read in
-k0 = 0 ## surface in NEMO
-k1 = 75 ## bottom in Andrews ORCA runs
 
 lfull_levels = True ## calculate baroclinic modes from all levels (not working)
 ltwo_levels  = False ## average to 2 levels to simplify barotropic/baroclinic calculations
 
+## Depths to read in 
 hmin   = 0.   # shallowest level to use 
 hmax   = 500. # deepest point to use
 hsep   = 500. # depth to split into two levels 
 
-## Diagnostics to plot
-lpaper          = False  ## make plots for a paper
-lke             = True  ## kinetic energy of top level
-lens            = False
-lke_freq        = False  ## frequency spectrum of kinetic energy of top level
-lbke            = True  ## barotropic kinetic energy
-lcke            = True ## baroclinic kinetic energy
-lTk_bc_bt       = True  ## spectral transfers of barotropic and baroclinic modes
-lTk_wind_visc   = False ## spectral wind forcing and dissipation
-lTk_wind_visc_variance = False
-lke_budget      = True
-lpe_budget      = False
-lenergy_budget  = True
-lbtbc_budget    = True
-lplot_mean_state= False ## plot mean state
-lshear          = True
-lbtbc_ke_xy     = False
-lke_contain     = True ## draw energy containing scale
-lbtbc_diff      = False ## difference between resoltuions
-plot_surf_ke    = False
-##
-##
-##
 
 ## Use viridis colormap if available 
 ## (only in newer versions of matplotlib)
@@ -366,13 +323,10 @@ if 'viridis' in plt.cm.datad.keys():
 else:
    cmap = plt.cm.YlGnBu_r
 
-filenameU = []
-filenameV = []
-
-name_list = ['INALT10.L46-KJH0017-NEST1']
-ddir_list = ['/Users/jkjellsson/data/INALT10.L46/']
-
-regions = ['agulhas-retro'] 
+name_list = setup['names']
+ddir_list = setup['dirs']
+regions   = setup['regions'] 
+outdir    = setup['outdir']
 
 nd = len(name_list) ## number of datasets, not including -5/3 lines etc.
 nr = len(regions) ## number of regions to analyse
@@ -576,6 +530,58 @@ for jd in range(0,nd):
             dlat = tlat[1:,:]-tlat[0:-1,:]
             dlat = dlat.mean()
             
+            if lrotate:
+               ##
+               ## Rotate the grid?
+               ##
+               #lon = np.linspace(-20,20,100)
+               #lat = np.linspace(-20,20,100)
+               #tlon,tlat = np.meshgrid(lon,lat)
+               
+               rot = np.pi/180. * (35.)
+               tlonR, tlatR = rotate_grid(tlon,tlat,rot)
+               
+               ## interpolate data to rotated grid
+               [zor] = interpolate_alldata([grid['tmask']],tlon,tlat,tlon,tlat)
+               [zrot] = interpolate_alldata([grid['tmask']],tlon,tlat,tlonR,tlatR)
+               
+               if diag_level >= 2:
+                  fig = plt.figure()
+                  ax1 = fig.add_subplot(221)
+                  ax1.set_title('rotated longitude')
+                  cf1 = ax1.contourf(tlonR)
+                  plt.colorbar(cf1,ax=ax1)
+                  
+                  ax2 = fig.add_subplot(222)
+                  ax2.set_title('rotated latitude')
+                  cf2 = ax2.contourf(tlatR)
+                  plt.colorbar(cf2,ax=ax2)
+                  
+                  ax3 = fig.add_subplot(223)
+                  ax3.set_title('original longitude')
+                  cf3 = ax3.contourf(tlon)
+                  plt.colorbar(cf3,ax=ax3)
+                  
+                  ax4 = fig.add_subplot(224)
+                  ax4.set_title('original latitude')
+                  cf4 = ax4.contourf(tlat)
+                  plt.colorbar(cf4,ax=ax4)
+                  
+                  fig = plt.figure()
+                  ax1 = fig.add_subplot(221)
+                  ax1.set_title('tmask original')
+                  cf1 = ax1.contourf(zor[0,:,:])
+                  plt.colorbar(cf1,ax=ax1)
+                  
+                  fig = plt.figure()
+                  ax2 = fig.add_subplot(222)
+                  ax2.set_title('tmask rotated 1')
+                  cf2 = ax2.contourf(zrot[0,:,:])
+                  plt.colorbar(cf2,ax=ax2)
+                  
+                  plt.show()
+                  sys.exit()
+               
             ## Here we set the wavenumber arrays
             ## The code has only been used for grid='ll', i.e. lon-lat grid
             ## but it should be possible and in fact more accurate to use grid='xy'
@@ -1135,7 +1141,7 @@ for jd in range(0,nd):
             for jk in range(0,uvel.shape[0]):
                vort[jk,:,:] = calculate_vorticity(uvel[jk,:,:],vvel[jk,:,:],xx,yy)
             
-            if diag_level >= 1:
+            if diag_level >= 2:
                fig = plt.figure()
                ax = fig.add_subplot(1,1,1)
                ax.set_title('uppermost vorticity')
@@ -1158,7 +1164,7 @@ for jd in range(0,nd):
             for jj in range(0,tlon.shape[0]):
                win[jj,:] = window_x[:]**2 * window_y[jj]**2
             
-            if diag_level >= 1:
+            if diag_level >= 2:
                fig = plt.figure()
                ax1 = fig.add_subplot(111)
                ax1.set_title('Min, Max of window function: %3f,%3f' %(win.min(),win.max()))
@@ -1259,7 +1265,7 @@ for jd in range(0,nd):
                         plt.colorbar(cf2,ax=ax2)
                         fig.savefig('bt_bc_KE_xy_'+name[jd]+'_'+regions[jr]+'.pdf',format='pdf')
 
-                  if (lbtbc_ke_xy):
+                  if diag_level >= 2:
                      if (jn == 0):
                         btke_store = 0.5 * (um[np.newaxis,  :,:]**2 + vm[np.newaxis,  :,:]**2)
                         bcke_store = 0.5 * (ut[np.newaxis,0,:,:]**2 + vt[np.newaxis,0,:,:]**2)
@@ -1484,7 +1490,7 @@ for jd in range(0,nd):
                      #atmp = np.sign(bprim[kk,:,:]) * np.sqrt(2. * ape)
                      atmp = bprim[kk,:,:]
                      
-                     if diag_level >= 1:
+                     if diag_level >= 2:
                         fig = plt.figure()
                         ax1 = fig.add_subplot(221)
                         ax1.set_title('bprim')
